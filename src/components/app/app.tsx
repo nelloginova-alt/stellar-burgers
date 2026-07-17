@@ -1,4 +1,22 @@
-import { ConstructorPage } from '@pages';
+import { Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useDispatch } from '../../services/store';
+
+import {
+  ConstructorPage,
+  Feed,
+  ForgotPassword,
+  Login,
+  NotFound404,
+  Profile,
+  ProfileOrders,
+  Register,
+  ResetPassword
+} from '@pages';
+import { Modal, OrderInfo, IngredientDetails } from '@components';
+import { fetchIngredients } from '../../services/slices/ingredientSlice';
+import { RootState } from '../../services/store';
 import '../../index.css';
 import styles from './app.module.css';
 
@@ -7,26 +25,56 @@ import { Preloader } from '@ui';
 
 const App = () => {
   /** TODO: взять переменные из стора */
-  const isIngredientsLoading = false;
-  const ingredients = [];
-  const error = null;
+  // const isIngredientsLoading = false;
+  // const ingredients = [];
+  // const error = null;
+  const dispatch = useDispatch();
+  const { ingredients, isIngredientsLoading, error } = useSelector(
+    (state: RootState) => state.ingredients
+  );
+
+  useEffect(() => {
+    dispatch(fetchIngredients());
+  }, [dispatch]);
 
   return (
     <div className={styles.app}>
       <AppHeader />
-      {isIngredientsLoading ? (
-        <Preloader />
-      ) : error ? (
-        <div className={`${styles.error} text text_type_main-medium pt-4`}>
-          {error}
-        </div>
-      ) : ingredients.length > 0 ? (
-        <ConstructorPage />
-      ) : (
-        <div className={`${styles.title} text text_type_main-medium pt-4`}>
-          Нет игредиентов
-        </div>
-      )}
+      <Routes>
+        <Route path='/' element={<ConstructorPage />} />
+        <Route path='/feed' element={<Feed />} />
+        <Route path='/forgot-password' element={<ForgotPassword />} />
+        <Route path='/login' element={<Login />} />
+        <Route path='/profile' element={<Profile />} />
+        <Route path='/profile/orders' element={<ProfileOrders />} />
+        <Route path='/register' element={<Register />} />
+        <Route path='/reset-password' element={<ResetPassword />} />
+        <Route
+          path='/feed/:number'
+          element={
+            <Modal title='Детали заказа' onClose={() => {}}>
+              <OrderInfo />
+            </Modal>
+          }
+        />
+        <Route
+          path='/ingredients/:id'
+          element={
+            <Modal title='Детали ингридиента' onClose={() => {}}>
+              <IngredientDetails />
+            </Modal>
+          }
+        />
+        <Route
+          path='/profile/orders/:number'
+          element={
+            <Modal title='Детали заказа' onClose={() => {}}>
+              <OrderInfo />
+            </Modal>
+          }
+        />
+        <Route path='*' element={<NotFound404 />} />
+      </Routes>
     </div>
   );
 };
