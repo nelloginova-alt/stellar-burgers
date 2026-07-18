@@ -1,24 +1,61 @@
-import { FC, useMemo } from 'react';
-import { TConstructorIngredient } from '@utils-types';
+import { FC, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { TConstructorIngredient, TOrder } from '@utils-types';
 import { BurgerConstructorUI } from '@ui';
-import { useSelector } from '../../services/store';
+import { useSelector, useDispatch, RootState } from '../../services/store';
+import { createOrder } from '../../services/slices/orderSlice';
+import { clearIngredient } from '../../services/slices/constructorSlice';
 
 export const BurgerConstructor: FC = () => {
   /** TODO: взять переменные constructorItems, orderRequest и orderModalData из стора */
-  const constructorState = useSelector((state) => state.constructor);
+  const constructorState = useSelector(
+    (state: RootState) => state.burgerConstructor
+  );
 
   const constructorItems = {
     bun: constructorState?.bun || null,
     ingredients: constructorState?.ingredients || []
   };
 
-  const orderRequest = false;
-  const orderModalData = null;
+  const { user } = useSelector((state) => state.user);
+  const navigate = useNavigate();
+
+  const dispatch = useDispatch();
+
+  const [orderRequest, setOrderRequest] = useState(false);
+  const [orderModalData, setOrderModalData] = useState<TOrder | null>(null);
 
   const onOrderClick = () => {
     if (!constructorItems.bun || orderRequest) return;
+    console.log('user:', user);
+    if (!user) {
+      console.log('Редирект на /login');
+      navigate('/login');
+      return;
+    }
+
+    const ingredientsId = [
+      constructorItems.bun._id,
+      ...constructorItems.ingredients.map((item) => item._id),
+      constructorItems.bun._id
+    ];
+
+    setOrderRequest(true);
+    dispatch(createOrder(ingredientsId))
+      .unwrap()
+      .then((data) => {
+        setOrderModalData(data);
+        setOrderRequest(false);
+        dispatch(clearIngredient());
+      })
+      .catch(() => {
+        setOrderRequest(false);
+      });
   };
-  const closeOrderModal = () => {};
+
+  const closeOrderModal = () => {
+    setOrderModalData(null);
+  };
 
   const price = useMemo(
     () =>

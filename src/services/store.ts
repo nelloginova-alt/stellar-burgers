@@ -13,11 +13,13 @@ import {
 
 const rootReducer = {
   ingredients: ingredientsReducer,
-  constructor: constructorReducer,
+  burgerConstructor: constructorReducer,
   user: userReducer,
   feed: feedReducer,
   order: orderReducer
 }; // Заменить на импорт настоящего редьюсера
+
+console.log('constructorReducer:', constructorReducer);
 
 const store = configureStore({
   reducer: rootReducer,

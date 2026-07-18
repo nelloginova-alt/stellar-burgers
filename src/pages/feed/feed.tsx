@@ -7,9 +7,8 @@ import { getFeeds } from '../../services/slices/feedSlice';
 
 export const Feed: FC = () => {
   const dispatch = useDispatch();
-  const { orders, isFeedLoading, error } = useSelector((state) => state.feed);
   /** TODO: взять переменную из стора */
-  // const orders: TOrder[] = [];
+  const { orders, isFeedLoading, error } = useSelector((state) => state.feed);
 
   useEffect(() => {
     dispatch(getFeeds());
