@@ -30,10 +30,31 @@ export const constructorSlice = createSlice({
     clearIngredient: (state) => {
       state.bun = null;
       state.ingredients = [];
+    },
+    moveIngredientUp: (state, action: PayloadAction<number>) => {
+      const index = action.payload;
+      if (index > 0) {
+        const temp = state.ingredients[index];
+        state.ingredients[index] = state.ingredients[index - 1];
+        state.ingredients[index - 1] = temp;
+      }
+    },
+    moveIngredientDown: (state, action: PayloadAction<number>) => {
+      const index = action.payload;
+      if (index < state.ingredients.length - 1) {
+        const temp = state.ingredients[index];
+        state.ingredients[index] = state.ingredients[index + 1];
+        state.ingredients[index + 1] = temp;
+      }
     }
   }
 });
 
-export const { addIngredient, removeIngredient, clearIngredient } =
-  constructorSlice.actions;
+export const {
+  addIngredient,
+  removeIngredient,
+  clearIngredient,
+  moveIngredientUp,
+  moveIngredientDown
+} = constructorSlice.actions;
 export default constructorSlice.reducer;
