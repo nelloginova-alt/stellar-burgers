@@ -10,7 +10,7 @@ type TFeedSlice = {
   error: string | null;
 };
 
-const initialState: TFeedSlice = {
+export const initialState: TFeedSlice = {
   orders: [],
   total: 0,
   totalToday: 0,
