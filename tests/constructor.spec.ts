@@ -8,6 +8,20 @@ test.describe('интеграционные тесты конструктора'
       update: false,
     });
 
+    await page.route('**/api/auth/user', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          user: {
+            email: 'test@yandex.ru',
+            name: 'Пользователь'
+          }
+        })
+      })
+    });
+
     await page.goto('/');
   });
 
@@ -18,7 +32,8 @@ test.describe('интеграционные тесты конструктора'
     await expect(ingredientCard).toBeVisible();
     await ingredientCard.click();
 
-    const modalHeader = page.getByText(/детали ингридиента/i);
+    const modal = page.locator('#modals');
+    const modalHeader = modal.getByText(/детали ингридиента/i);
     await expect(modalHeader).toBeVisible();
 
     const modalIngredientTitle = page.getByRole('heading', { name: ingredientName });
@@ -97,21 +112,44 @@ test.describe('интеграционные тесты конструктора'
     await expect(orderButton).toBeVisible();
     await orderButton.click();
 
-    const modalOrderNumber = page.getByText('123456');
+    const modal = page.locator('#modals');
+    const modalOrderNumber = modal.getByText('123456');
     await expect(modalOrderNumber).toBeVisible();
 
-    const closeButton = page.getByTestId('close-modal-button');
+    const closeButton = modal.getByTestId('close-modal-button');
     await closeButton.click();
     await expect(modalOrderNumber).not.toBeVisible();
 
     const addedFilling = page.locator('.constructor-element').filter({ hasText: 'Соус Spicy-X' });
     await expect(addedFilling).not.toBeVisible();
+
+    const addedBun = page.locator('.constructor-element').filter({ hasText: 'Краторная булка N-200i' });
+    await expect(addedBun).not.toBeVisible();
   })
 });
 
 test.describe('тестирование модального окна ингредиента', () => {
 
   test.beforeEach(async ({page}) => {
+    await page.routeFromHAR('./tests/hars/ingredients.har', {
+      url: '**/api/ingredients',
+      update: false
+    });
+
+    await page.route('**/api/auth/user', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          user: {
+            email: 'test@yandex.ru',
+            name: 'Пользователь'
+          }
+        })
+      })
+    });
+
     await page.goto('/');
   });
 
@@ -119,10 +157,11 @@ test.describe('тестирование модального окна ингре
     const ingredient = page.locator('a').filter({ hasText: 'Соус Spicy-X' });
     await ingredient.click();
 
-    const modalTitle = page.getByText('Детали ингридиента');
+    const modal = page.locator('#modals');
+    const modalTitle = modal.getByText('Детали ингридиента');
     await expect(modalTitle).toBeVisible();
 
-    const ingredientName = page.getByText('Соус Spicy-X').nth(1);
+    const ingredientName = modal.getByText('Соус Spicy-X');
     await expect(ingredientName).toBeVisible();
 
     const closeButton = page.getByTestId('close-modal-button');
@@ -132,7 +171,8 @@ test.describe('тестирование модального окна ингре
 
   test('закрытие модального окна по оверлею', async ({page}) => {
     await page.locator('a').filter({ hasText: 'Соус Spicy-X' }).click();
-    await expect(page.getByText('Детали ингридиента')).toBeVisible();
+    const modal = page.locator('#modals');
+    await expect(modal.getByText('Детали ингридиента')).toBeVisible();
 
     const overlay = page.getByTestId('modal-overlay');
     await overlay.click({ position: {x: 10, y: 10}});
@@ -141,7 +181,8 @@ test.describe('тестирование модального окна ингре
 
   test('закрытие модального окна нажатием на Escape', async ({page}) => {
     await page.locator('a').filter({ hasText: 'Соус Spicy-X' }).click();
-    await expect(page.getByText('Детали ингридиента')).toBeVisible();
+    const modal = page.locator('#modals');
+    await expect(modal.getByText('Детали ингридиента')).toBeVisible();
 
     await page.keyboard.press('Escape');
     await expect(page.getByText('Детали ингридиента')).not.toBeVisible();
@@ -149,7 +190,26 @@ test.describe('тестирование модального окна ингре
 });
 
 test.describe('авторизация и защищенные маршруты', () => {
+
+  test.beforeEach(async ({page}) => {
+    await page.routeFromHAR('./tests/hars/ingredients.har', {
+      url: '**/api/ingredients',
+      update: false,
+    })
+  });
+
   test('редирект неавторизованного пользователя на страницу логина', async ({page}) => {
+
+    await page.route('**/api/auth/user', async route => {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: false,
+          message: 'Необходимо авторизоваться'
+        })
+      })
+    });
 
     await page.goto('/profile');
     await expect(page).toHaveURL('/login');
@@ -211,14 +271,28 @@ test.describe('авторизация и защищенные маршруты',
     });
 
     await loginButton.click();
-
     await expect(page).toHaveURL('/')
   })
 });
 
 test.describe('лента заказов', () => {
   test.beforeEach(async ({page}) => {
-  
+    await page.routeFromHAR('./tests/hars/ingredients.har', {
+      url: '**/api/ingredients',
+      update: false,
+    });
+
+    await page.route('**/api/auth/user', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          user: { email: 'test@yandex.ru', name: 'Пользователь' }
+        })
+      });
+    });
+
     await page.route('**/api/orders/all', async route => {
       await route.fulfill({
         status: 200,
@@ -228,16 +302,37 @@ test.describe('лента заказов', () => {
           orders: [
             {
               _id: '233',
-              ingredients: ['ingredient1', 'ingredient2'],
-              status: 'ready',
+              ingredients: ['643d69a5c3f7b9001cfa093c', '643d69a5c3f7b9001cfa0941'],
+              status: 'done',
               name: 'Order',
-              createdAt: '',
-              updatedAt: '',
+              createdAt: '2024-01-01T00:00:00.000Z',
+              updatedAt: '2024-01-01T00:00:00.000Z',
               number: 123456
             }
           ],
           total: 1000,
           totalToday: 10
+        })
+      })
+    });
+
+    await page.route('**/api/orders/123456', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          orders: [
+            {
+              _id: '233',
+              ingredients: ['643d69a5c3f7b9001cfa093c', '643d69a5c3f7b9001cfa0941'],
+              status: 'done',
+              name: 'Order',
+              createdAt: '2024-01-01T00:00:00.000Z',
+              updatedAt: '2024-01-01T00:00:00.000Z',
+              number: 123456
+            }
+          ]
         })
       })
     });
@@ -249,18 +344,19 @@ test.describe('лента заказов', () => {
     const orderName = page.getByText('Order');
     await expect(orderName).toBeVisible();
 
-    const orderNumber = page.getByText('123456');
+    const orderNumber = page.getByText('#123456');
     await expect(orderNumber).toBeVisible();
   });
 
   test('открытие модального окна с деталями заказа', async ({page}) => {
-    const orderCard= page.getByText('Order');
+    const orderCard = page.locator('a').filter({ hasText: 'Order' });
     await orderCard.click();
 
     await expect(page).toHaveURL(/.*\/feed\/123456/);
-
-    const modalOrderNumber = page.getByText('123456');
-    await expect(modalOrderNumber).toBeVisible();
+ 
+    const orderNumberElement = page.getByTestId('modal-order-number');
+    await expect(orderNumberElement).toBeVisible();
+    await expect(orderNumberElement).toContainText('123456');
   })
 })
 

@@ -1,7 +1,10 @@
 import { expect, test, describe } from '@jest/globals';
 import { configureStore } from '@reduxjs/toolkit';
 
-import ingredientReducer, { fetchIngredients, initialState } from '../ingredientSlice';
+import ingredientReducer, {
+  fetchIngredients,
+  initialState
+} from '../ingredientSlice';
 import { TIngredient } from '@utils-types';
 import * as burgerAPI from '@api';
 
@@ -59,8 +62,8 @@ describe('тесты асинхронных экшенов ingredientSlice', () 
   });
 
   test('обработка неизвестного экшена', () => {
-    const action = { type: 'unknown'};
+    const action = { type: 'unknown' };
     const newState = ingredientReducer(undefined, action);
     expect(newState).toEqual(initialState);
-  })
+  });
 });
